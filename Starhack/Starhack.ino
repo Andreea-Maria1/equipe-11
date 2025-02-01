@@ -277,6 +277,10 @@ void dhtTask(){
 
   displayPotato();
 
+  // if(hum < 50.0){
+  //   servoStrawTask();
+  // }
+
   if(isPotatoOkay(temp,hum)){
     displayIcon(9, 0, heart);
   }else{
@@ -284,12 +288,13 @@ void dhtTask(){
   }
 }
 
-void servoStrawTask(){
-  for (pos = 35; pos <= 165; pos += 1) { 
+void servoStrawTask(){ 
+  for (pos = 165; pos >= 35; pos -= 1) { 
     servoStraw.write(pos);
     delay(15);
   }
-  for (pos = 165; pos >= 35; pos -= 1) { 
+  delay(500);
+  for (pos = 35; pos <= 165; pos += 1) { 
     servoStraw.write(pos);
     delay(15);
   }
@@ -341,15 +346,14 @@ void loop() {
 
   delay(2000);
   dhtTask();
-  
   // delay(1000);
   // servoStraw();
 
-  delay(1000);
+  // delay(1000);
   rfIdTask();
 
   // delay(1000);
   // servoDoor();
   
-  delay(1000);
+  // delay(1000);
 }
