@@ -23,6 +23,8 @@
 
 #define SERVO_STRAW_PIN 46
 #define SERVO_DOOR_PIN 44
+#define BUTTON_STRAW 29
+
 
 MFRC522 rfid(SS_PIN,RST_PIN);
 
@@ -222,6 +224,9 @@ void setup() {
   displaySetup();
   rfIdSetup();
   servoSetup();
+
+  pinMode(BUTTON_STRAW,INPUT);
+
 }
 
 void displayIcon(uint8_t col, uint8_t row, byte* icon){
@@ -330,7 +335,11 @@ void rfIdTask(){
 
 void loop() {
   
-  delay(1000);
+  if(digitalRead(BUTTON_STRAW) == 1){
+    servoStrawTask();
+  }
+
+  delay(2000);
   dhtTask();
   
   // delay(1000);
