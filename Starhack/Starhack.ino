@@ -1,10 +1,41 @@
 #include <LiquidCrystal.h>
 #include <dht_nonblocking.h>
 #include <DHT11.h>
+#include <SPI.h>
+#include <MFRC522.h>
 
-LiquidCrystal lcd(7, 8, 9, 10, 11, 12);
-DHT_nonblocking dht(2, DHT_TYPE_11);
+// Pin configuration
+#define SS_PIN 3   // RFID SS (SDA)
+#define RST_PIN 6   // RFID Reset
+#define RED_PIN 43  // Red LED
+#define GREEN_PIN 45 // Green LED
+#define BLUE_PIN 47  // Blue LED
 
+#define RS 7
+#define E 8
+#define D4 9
+#define D5 10
+#define D6 11
+#define D7 12
+
+#define DHT_PIN 2
+
+MFRC522 rfid(SS_PIN,RST_PIN);
+LiquidCrystal lcd(RS, E, D4, D5, D6, D7);
+DHT_nonblocking dht(DHT_PIN, DHT_TYPE_11);
+
+byte validUID[] = {0x6D, 0x20, 0xA8, 0x82};
+
+byte separator[8] = {
+  0b01100,
+  0b01100,
+  0b01100,
+  0b01100,
+  0b01100,
+  0b01100,
+  0b01100,
+  0b01100
+};
 byte heart[8] = {
   0b00000,
   0b01010,
@@ -151,16 +182,21 @@ void displayCat(){
   lcd.setCursor(15, 1);
   lcd.write(byte(7));
 }
+void displaySetup(){
+  lcd.begin(16,2);
+  lcd.createChar(1, separator);
+  lcd.setCursor(4, 1);
+  lcd.write(byte(1));
+  lcd.setCursor(4, 0);
+  lcd.write(byte(1));
+  displayCat();
+}
 
 void setup() {
-  // put your setup code here, to run once:
-  lcd.begin(16,2);
   Serial.begin(9600);
-  lcd.setCursor(4, 0);
-  lcd.print("#");
-  lcd.setCursor(4, 1);
-  lcd.print("#");
-  displayCat();
+  // SPI.begin();
+  // rfid.PCD_Init();
+  displaySetup();
 }
 
 void displayIcon(uint8_t col, uint8_t row, byte* icon){
@@ -186,7 +222,7 @@ void updateHum(float hum){
 }
 
 bool isPotatoOkay(float temp, float hum){
-  return (temp <= 20 && temp >= 15) && ( hum <= 95 && hum >= -1);
+  return (temp <= 30.0 && temp >= 15.0) && ( hum <= 95.0 && hum >= 85.0);
 }
 
 void displayPotato(){
@@ -205,17 +241,47 @@ void dhtTask(){
 
   displayPotato();
 
-  if(isPotatoOkay(temp, hum)){
+  if(isPotatoOkay(temp,hum)){
     displayIcon(9, 0, heart);
   }else{
     displayIcon(9,0, cross);
   }
 }
 
-void loop() {
+void rfIdTask(){
+  if (!rfid.PICC_IsNewCardPresent()) return;
 
-  // displayCat();
+  if (!rfid.PICC_ReadCardSerial()) return;
+
+  bool isValid = true;
+
+  for (byte i = 0; i < rfid.uid.size; i++) 
+    if (rfid.uid.uidByte[i] != validUID[i])
+      isValid = false;
+
+  if (isValid) {
+    setLEDColor(0, 255, 0);
+    delay(4000);
+  } else {
+    setLEDColor(255, 0, 0);
+    delay(1000);
+  }
+  
+  setLEDColor(255, 0, 0);
+
+  rfid.PICC_HaltA();
+}
+
+void setLEDColor(int red, int green, int blue) {
+    analogWrite(RED_PIN, red);
+    analogWrite(GREEN_PIN, green);
+    analogWrite(BLUE_PIN, blue);
+}
+
+void loop() {
   delay(1000);
+  // rfIdTask();
+  delay(500);
   dhtTask();
 
 }
